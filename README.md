@@ -1,8 +1,25 @@
+# STB_IMV 2021
+
+> This is 2021 MSVC build of the famous **imv_(stb)_&trade;**
+>
+> Changes are as light as possible, aka "cosmetical"
+>
+> Build is x86. x64 build would require much more potentially destructive  refactoring
+>
+> Compiled and built using Visual Studio 2019 and cl.exe
+>
+> Building and refactoring by dbj@dbj.org
+
+
+------------------------------------------------------------------------
+
+## Original readme
+
 Project status: 1.02 release
 
 =Information for Users=
 
-*imv_(stb)_* is an extremely lightweight and fast image viewer/browser for the Windows platform. The current executable is about 70KB (without executable compression).
+*imv_(stb)_*&trade; is an extremely lightweight and fast image viewer/browser for the Windows platform. The current executable is about 70KB (without executable compression).
 
 ==Features==
 
