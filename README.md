@@ -9,8 +9,8 @@
 > Compiled and built using Visual Studio 2019 and cl.exe
 >
 > Building and refactoring by dbj@dbj.org
-
-
+>
+> ( *First timers: h == Help, Right mouse button == Exit* )
 ------------------------------------------------------------------------
 
 ## Original readme
