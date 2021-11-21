@@ -37,7 +37,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
  }
 
 */
+// https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
 
+#ifndef _WIN32_WINNT_WIN10
+#define _WIN32_WINNT_WIN10 0x0A00
+#endif // _WIN32_WINNT_WIN10
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT _WIN32_WINNT_WIN10
+#endif 
+
+#ifndef WINVER  
+#define  WINVER  _WIN32_WINNT_WIN10
+#endif
+
+#define NOCOMM
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <crtdbg.h>
@@ -45,9 +59,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #undef assert
 #define assert _ASSERTE
 
-HANDLE dbj_create_log_file(LPWSTR log_file_name, int append_log_suffix);
+// single function API, risky ... but ...
+void dbj_log_print(const char* file_, const char* line_, char* str, ...);
 
-void  dbj_write_log_file(LPCSTR text_);
+#ifndef __clang__
+void dbj_close_log_file(void);
+#else 
+#endif // ! __clang__
 
 
 #ifdef DBJ_WIN32_LOGFILE_IMPLEMENTATION
@@ -63,30 +81,44 @@ void dbj_close_log_file(void) {
         CloseHandle(dbj_log_file);
 }
 
-HANDLE dbj_create_log_file(LPWSTR log_file_name, int append_log_suffix)
+void dbj_terror( void )
 {
+    wchar_t buf[BUFSIZ] = {0 } ;
+    FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        buf, (sizeof(buf) / sizeof(wchar_t)), NULL);
+
+    MessageBoxW(NULL, buf, L"dbj win32 log file terminating error", MB_OK);
+
+    exit(0);
+}
+
+HANDLE dbj_create_log_file(void)
+{
+    LPWSTR       cmdline = GetCommandLineW();
+    int argc;
+    LPWSTR* argv = CommandLineToArgvW(cmdline, &argc);
+
+    LPWSTR log_file_name = argv[0];
+
     WCHAR wbuff[2048] = { 0 };
-    if (append_log_suffix) {
-        int rez = wsprintfW(wbuff, L"%s.log", log_file_name);
-
-        assert(rez > 1);
-
-        log_file_name = &wbuff[0];
+    {
+    int rez = wsprintfW(wbuff, L"%s.log", log_file_name);
+    assert(rez > 1);
+    log_file_name = &wbuff[0];
     }
 
-    HANDLE hFile = CreateFileW(log_file_name,                // name of the write
+    HANDLE hFile = CreateFileW(
+        log_file_name,          // name of the write
         GENERIC_WRITE,          // open for writing
         0,                      // do not share
         NULL,                   // default security
-        CREATE_NEW,             // create new file only
+        CREATE_ALWAYS,          // create new file always
         FILE_ATTRIBUTE_NORMAL,  // normal file
         NULL);                  // no attr. template
 
-    if (hFile == INVALID_HANDLE_VALUE)
-    {
-        error("CreateFile failed, aborting ...");
-        exit(0);
-    }
+    if(hFile == INVALID_HANDLE_VALUE)
+        dbj_terror();
     return hFile;
 }
 
@@ -113,7 +145,8 @@ void  default_protector_function(int lock)
 void  dbj_write_log_file(LPCSTR text_)
 {
     assert(text_);
-    assert(dbj_log_file);
+    if (! dbj_log_file)
+    dbj_log_file = dbj_create_log_file();
 
     default_protector_function(1);
 
@@ -134,6 +167,29 @@ void  dbj_write_log_file(LPCSTR text_)
     }
 
     default_protector_function(0);
+}
+
+// DBJ: just a bit less trivial
+void dbj_log_print(const char* file_, const char* line_, char* str, ...) 
+{
+
+    assert(file_ && line_);
+    char buffer[1024] = { 0 };
+    va_list va = 0;
+    va_start(va, str);
+    vsprintf(buffer, str, va);
+    va_end(va);
+
+    dbj_write_log_file("\n");
+    dbj_write_log_file(file_);
+    dbj_write_log_file("|");
+    dbj_write_log_file(line_);
+    dbj_write_log_file("|");
+    dbj_write_log_file(buffer);
+
+#ifdef DBJ_ERROR_USES_MBOX
+    MessageBox(NULL, buffer, "imv(stb) (dbj 2021) error", MB_OK);
+#endif
 }
 
 #endif // DBJ_WIN32_LOGFILE_IMPLEMENTATION

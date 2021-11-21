@@ -141,48 +141,14 @@ void error(char* str) { MessageBox(NULL, str, "imv(stb) error", MB_OK); }
 #define DBJ_WIN32_LOGFILE_IMPLEMENTATION
 #include "dbj_win32_log_file.h"
 
-// DBJ: just a bit less trivial
-static inline void dbj_log_print(const char * file_, const char * line_, char *str, ...) {
 
-    assert( file_ && line_ );
-    char buffer[1024] = {0};
-    va_list va = 0 ;
-    va_start(va, str);
-    vsprintf(buffer, str, va);
-    va_end(va);
 
-    assert(dbj_log_file);
-    dbj_write_log_file("\n");
-    dbj_write_log_file(file_);
-    dbj_write_log_file("|");
-    dbj_write_log_file(line_);
-    dbj_write_log_file("|");
-    dbj_write_log_file(buffer );
-
-#ifdef DBJ_ERROR_USES_MBOX
-    MessageBox(NULL, buffer, "imv(stb) (dbj 2021) error", MB_OK);
-#endif
-}
-
-// DBJ: renamed o to DBJ_LOG
-// OutputDebugString with varargs, can be compiled out
-//#ifdef _DEBUG
-//int do_debug=1;
-//void ods(char *str, ...)
-//{
-//   if (do_debug) {
-//       char buffer[1024] = {0}; // DBJ added `={0}`
-//      va_list va = 0;
-//      va_start(va,str);
-//      vsprintf(buffer, str, va);
-//      va_end(va);
-//      OutputDebugString(buffer);
-//   }
-//}
-//#define DBJ_LOG(x) ods x
-//#else
+// DBJ: 
+#ifndef _DEBUG
+#define DBJ_LOG(x) ((void)x)
+#else
 #define DBJ_LOG(...) dbj_log_print( __FILE__,_CRT_STRINGIZE(__LINE__), __VA_ARGS__ )
-//#endif
+#endif
 
 
 // internal messages (all used for waking up main thread from tasks)
@@ -2733,11 +2699,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    LPWSTR       cmdline = GetCommandLineW();
    int argc;
    LPWSTR       *argv = CommandLineToArgvW(cmdline, &argc);
-
-
-   // DBJ
-   dbj_log_file = dbj_create_log_file(argv[0], 1);
-   dbj_write_log_file("STARTING");
 
    //int argc;
    //char **argv = stb_tokens_quoted(lpCmdLine, " ", &argc);
