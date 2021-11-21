@@ -1,3 +1,39 @@
+/*
+* 2021 BUILD (c) dbj@dbj.org
+*/
+// DBJ: prologue
+#pragma warning( push )
+#pragma warning( disable : 4996 )
+#pragma warning( disable : 4267 )
+#pragma warning( disable : 4047 )
+#pragma warning( disable : 4024 )
+#pragma warning( disable : 4244 )
+
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wincompatible-pointer-types"
+#pragma clang diagnostic ignored "-Wincompatible-function-pointer-types"
+#pragma clang diagnostic ignored "-Wpointer-sign"
+#pragma clang diagnostic ignored "-Wint-conversion"
+#pragma clang diagnostic ignored "-Wdangling-else"
+#pragma clang diagnostic ignored "-Wmultichar"
+#pragma clang diagnostic ignored "-Wself-assign"
+#pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
+#pragma clang diagnostic ignored "-Wunused-value"
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif // __clang__
+
+// above is reactive solution, be proactive: enable warnings and remove them in code
+
+#define DBJ_UNUSED(...) ((void)(__VA_ARGS__))
+
+// DBJ: it was "Times New Roman"
+#define DBJ_LABEL_FONT_NAME "Consolas"
+// DBJ: it was 12, quite ok for 2007
+#define DBJ_LABEL_FONT_SIZE 24
+
+
 /*  stb(imv)  windows image viewer
     Copyright 2007  Sean Barrett
 
@@ -28,7 +64,13 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
-#include <assert.h>
+
+// DBJ #include <assert.h>
+#include <crtdbg.h>
+
+// DBJ
+#define assert _ASSERTE
+
 #include <process.h>
 #include <math.h>
 
@@ -42,11 +84,13 @@
 #endif
 
 #ifndef USE_GDIPLUS
-#define USE_GDIPLUS 1
+// DBJ: set to 0
+#define USE_GDIPLUS 0
 #endif
 
 #ifndef USE_FREEIMAGE
-#define USE_FREEIMAGE 1
+// DBJ: set to 0
+#define USE_FREEIMAGE 0
 #endif
 
 #ifndef ALLOW_RECOLORING
@@ -91,26 +135,54 @@ int nearest_neighbor = 0; // internal use
 #undef set
 
 // trivial error handling
-void error(char *str) { MessageBox(NULL, str, "imv(stb) error", MB_OK); }
+void error(char* str) { MessageBox(NULL, str, "imv(stb) error", MB_OK); }
 
-// OutputDebugString with varargs, can be compiled out
-#ifdef _DEBUG
-int do_debug=1;
-void ods(char *str, ...)
-{
-   if (do_debug) {
-      char buffer[1024];
-      va_list va;
-      va_start(va,str);
-      vsprintf(buffer, str, va);
-      va_end(va);
-      OutputDebugString(buffer);
-   }
-}
-#define o(x) ods x
-#else
-#define o(x)
+
+#define DBJ_WIN32_LOGFILE_IMPLEMENTATION
+#include "dbj_win32_log_file.h"
+
+// DBJ: just a bit less trivial
+static inline void dbj_log_print(const char * file_, const char * line_, char *str, ...) {
+
+    assert( file_ && line_ );
+    char buffer[1024] = {0};
+    va_list va = 0 ;
+    va_start(va, str);
+    vsprintf(buffer, str, va);
+    va_end(va);
+
+    assert(dbj_log_file);
+    dbj_write_log_file("\n");
+    dbj_write_log_file(file_);
+    dbj_write_log_file("|");
+    dbj_write_log_file(line_);
+    dbj_write_log_file("|");
+    dbj_write_log_file(buffer );
+
+#ifdef DBJ_ERROR_USES_MBOX
+    MessageBox(NULL, buffer, "imv(stb) (dbj 2021) error", MB_OK);
 #endif
+}
+
+// DBJ: renamed o to DBJ_LOG
+// OutputDebugString with varargs, can be compiled out
+//#ifdef _DEBUG
+//int do_debug=1;
+//void ods(char *str, ...)
+//{
+//   if (do_debug) {
+//       char buffer[1024] = {0}; // DBJ added `={0}`
+//      va_list va = 0;
+//      va_start(va,str);
+//      vsprintf(buffer, str, va);
+//      va_end(va);
+//      OutputDebugString(buffer);
+//   }
+//}
+//#define DBJ_LOG(x) ods x
+//#else
+#define DBJ_LOG(...) dbj_log_print( __FILE__,_CRT_STRINGIZE(__LINE__), __VA_ARGS__ )
+//#endif
 
 
 // internal messages (all used for waking up main thread from tasks)
@@ -246,10 +318,10 @@ typedef struct
 } ImageFile;
 
 // controls for interlocking communications
-stb_mutex cache_mutex, decode_mutex;
-stb_semaphore decode_queue;
-stb_semaphore disk_command_queue;
-stb_sync resize_merge;
+stb_mutex cache_mutex, decode_mutex = 0 ; // DBJ added `= 0`
+stb_semaphore decode_queue = 0 ; // DBJ added `= 0`
+stb_semaphore disk_command_queue = 0 ; // DBJ added `= 0`
+stb_sync resize_merge = 0 ; // DBJ added `= 0`
 
 // a request communicated from the main thread to the disk-loader task
 typedef struct
@@ -269,7 +341,9 @@ void *diskload_task(void *p)
       DiskCommand dc;
 
       // wait to be woken up by a command from the main thread
-      o(("READ: Waiting for disk request.\n"));
+#ifdef _DEBUG
+      DBJ_LOG(("READ: Waiting for disk request."));
+#endif
       stb_sem_waitfor(disk_command_queue);
       // it's possible for the main thread to do:
       //   1. ... store a command in the command buffer ...
@@ -299,7 +373,7 @@ void *diskload_task(void *p)
       }
       stb_mutex_end(cache_mutex);
 
-      o(("READ: Got disk request, %d items.\n", dc.num_files));
+      DBJ_LOG(("READ: Got disk request, %d items", dc.num_files));
       for (i=0; i < dc.num_files; ++i) {
          int n;
          uint8 *data;
@@ -311,10 +385,10 @@ void *diskload_task(void *p)
          // flag on previous requests, and we shouldn't waste time loading
          // data that's no longer high-priority
          if (dc.files[i]->bail) {
-            o(("READ: Bailing on disk request\n"));
+            DBJ_LOG(("READ: Bailing on disk request"));
             dc.files[i]->status = LOAD_inactive;
          } else {
-            o(("READ: Loading file %s\n", dc.files[i]->filename));
+            DBJ_LOG(("READ: Loading file %s", dc.files[i]->filename));
             assert(dc.files[i]->filedata == NULL);
 
             // read the data
@@ -323,7 +397,7 @@ void *diskload_task(void *p)
             // update the results
             // don't need to mutex these, because we own them via ->status
             if (data == NULL) {
-               o(("READ: error reading\n"));
+               DBJ_LOG(("READ: error reading"));
                dc.files[i]->error = strdup("can't open");
                dc.files[i]->filedata = NULL;
                dc.files[i]->len = 0;
@@ -331,7 +405,7 @@ void *diskload_task(void *p)
                dc.files[i]->status = LOAD_error_reading;
                wake(WM_APP_LOAD_ERROR); // wake main thread to react to error
             } else {
-               o(("READ: Successfully read %d bytes\n", n));
+               DBJ_LOG(("READ: Successfully read %d bytes", n));
                dc.files[i]->error = NULL;
                assert(dc.files[i]->filedata == NULL);
                dc.files[i]->filedata = data;
@@ -361,7 +435,9 @@ int mono;
 void make_image(Image *z, int image_x, int image_y, uint8 *image_data, BOOL image_loaded_as_rgb, int image_n)
 {
    #ifdef ALLOW_RECOLORING
-   int ms,md, ns,nd;
+   // DBJ: unused 
+    int ms, md, ns, nd;
+    DBJ_UNUSED(ms,md, ns,nd) ;
    #endif
    int i,j,k,ymin=0,ymax=256*8-1;
    z->pixels = image_data;
@@ -536,18 +612,18 @@ void *decode_task(void *p)
 
       if (f == NULL) {
          // wait for load thread to wake us
-         o(("DECODE: blocking\n"));
+         DBJ_LOG(("DECODE: blocking"));
          stb_sem_waitfor(decode_queue);
-         o(("DECODE: woken\n"));
+         DBJ_LOG(("DECODE: woken"));
       } else {
          int x,y,loaded_as_rgb,n;
          uint8 *data;
          assert(f->status == LOAD_decoding);
 
          // decode image
-         o(("DECIDE: decoding %s\n", f->filename));
+         DBJ_LOG(("DECIDE: decoding %s", f->filename));
          data = imv_decode_from_memory(f->filedata, f->len, &x, &y, &loaded_as_rgb, &n, BPP, f->filename);
-         o(("DECODE: decoded %s\n", f->filename));
+         DBJ_LOG(("DECODE: decoded %s", f->filename));
 
          // free copy of data from disk, which we don't need anymore
          free(f->filedata);
@@ -727,7 +803,7 @@ void draw_nice(HDC hdc, char *text, RECT *rect, uint flags)
 }
 
 // cached error message for most recent image
-char display_error[1024];
+char display_error[1024] = {0};
 
 // to make an image with an error the most recent image, call this
 void set_error(volatile ImageFile *z)
@@ -742,8 +818,8 @@ void set_error(volatile ImageFile *z)
    source = NULL;
 }
 
-HFONT label_font;
-int label_font_height=12;
+HFONT label_font = 0 ; // DBJ:added `= 0`
+int label_font_height= DBJ_LABEL_FONT_SIZE; 
 
 // build the font for the filename label
 void build_label_font(void)
@@ -751,12 +827,12 @@ void build_label_font(void)
    LOGFONT lf = {0};
    lf.lfHeight       = label_font_height;
    lf.lfOutPrecision = OUT_TT_PRECIS; // prefer truetype to raster fonts
-   strcpy(lf.lfFaceName, "Times New Roman");
+   strcpy(lf.lfFaceName, DBJ_LABEL_FONT_NAME);
    if (label_font) DeleteObject(label_font);
    label_font = CreateFontIndirect(&lf);
 }
 
-char path_to_file[4096];
+char path_to_file[4096] = {0}; // DBJ: added `= {0}`
 int show_frame = TRUE;   // show border or not?
 int show_label = FALSE;  // display the help text or not
 int recursive = FALSE;
@@ -1205,7 +1281,7 @@ void update_source(ImageFile *q)
 {
    source = q->image;
    source_c = q;
-   o(("Making %s (%d) current\n", q->filename, q->lru));
+   DBJ_LOG(("Making %s (%d) current", q->filename, q->lru));
    if (q->lru > best_lru)
       best_lru = q->lru;
 
@@ -1458,7 +1534,7 @@ void flush_cache(int locked)
          if (!locked) stb_mutex_end(cache_mutex);
 
          // now do the potentially slow stuff
-         o(("MAIN: freeing cache: %s\n", p.filename));
+         DBJ_LOG(("MAIN: freeing cache: %s", p.filename));
          stb_sdict_remove(file_cache, p.filename, NULL);
          --occupied_slots; // occupied slots
          if (p.status == LOAD_available)
@@ -1475,7 +1551,7 @@ void flush_cache(int locked)
       }
    }
    if (!locked) stb_mutex_end(cache_mutex);
-   o(("Reduced to %d megabytes\n", total >> 20));
+   DBJ_LOG(("Reduced to %d megabytes", total >> 20));
 }
 
 // keep an index within the 'fileinfo' array
@@ -1513,7 +1589,7 @@ void queue_disk_command(DiskCommand *dc, int which, int make_current)
       // it's already loaded
       if (z->status == LOAD_available) {
          if (make_current) {
-            o(("Hey look, make_currentdisk request for %s and it's ready to show!\n", z->filename));
+            DBJ_LOG(("Hey look, make_currentdisk request for %s and it's ready to show!", z->filename));
             update_source((ImageFile *) z);
          }
          return;
@@ -1555,7 +1631,7 @@ void queue_disk_command(DiskCommand *dc, int which, int make_current)
    // now, take the z we already had, or just allocated, prep it for loading
    assert(z->status == LOAD_inactive);
 
-   o(("MAIN: proposing %s\n", z->filename));
+   DBJ_LOG(("MAIN: proposing %s", z->filename));
    z->status = LOAD_inactive;     // we still own it for now
    z->image = NULL;
    z->bail = 0;
@@ -1639,16 +1715,16 @@ void stb_from_utf8_multi(stb__wchar *out, char *in, int max_out)
 
 void open_file(void)
 {
-   stb__wchar buf1[1024], buf2[4096];
-   OPENFILENAMEW o = { sizeof(o) };
+    stb__wchar buf1[1024] = { 0 }, buf2[4096] = {0};
+   OPENFILENAMEW DBJ_LOG = { sizeof(DBJ_LOG) };
 
    stb_from_utf8_multi(buf1, open_filter, sizeof(buf1));
-   o.lpstrFilter = buf1;
-   o.lpstrFile = buf2;
+   DBJ_LOG.lpstrFilter = buf1;
+   DBJ_LOG.lpstrFile = buf2;
    buf2[0] = 0;
-   o.nMaxFile = sizeof(buf2);
-   o.Flags = OFN_HIDEREADONLY;
-   if (!GetOpenFileNameW(&o))
+   DBJ_LOG.nMaxFile = sizeof(buf2);
+   DBJ_LOG.Flags = OFN_HIDEREADONLY;
+   if (!GetOpenFileNameW(&DBJ_LOG))
       return;
    stb_to_utf8(filenamebuffer, buf2, sizeof(filenamebuffer));
    filename = filenamebuffer;
@@ -2305,7 +2381,7 @@ int WINAPI MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
          }
          if (best) {
-            o(("Post-decode, found a best image, better than any before.\n"));
+            DBJ_LOG(("Post-decode, found a best image, better than any before.\n"));
             update_source(best);
          }
          // since we've decoded a new image, our cache might be too big,
@@ -2657,9 +2733,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    LPWSTR       cmdline = GetCommandLineW();
    int argc;
    LPWSTR       *argv = CommandLineToArgvW(cmdline, &argc);
+
+
+   // DBJ
+   dbj_log_file = dbj_create_log_file(argv[0], 1);
+   dbj_write_log_file("STARTING");
+
    //int argc;
    //char **argv = stb_tokens_quoted(lpCmdLine, " ", &argc);
-   char filenamebuffer[4096];
+   char filenamebuffer[4096] = {0};
 
    MEMORYSTATUS mem;
    MSG          msg;
@@ -2740,15 +2822,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    srand(time(NULL));
 
    if (argc < 2) {
-      stb__wchar buf1[1024], buf2[4096];
-      OPENFILENAMEW o = { sizeof(o) };
+       stb__wchar buf1[1024] = {0}, buf2[4096] = { 0 };
+      OPENFILENAMEW ofw_ = { sizeof(ofw_) };
 
       stb_from_utf8_multi(buf1, open_filter, sizeof(buf1));
-      o.lpstrFilter = buf1;
-      o.lpstrFile = buf2;
+      ofw_.lpstrFilter = buf1;
+      ofw_.lpstrFile = buf2;
       buf2[0] = 0;
-      o.nMaxFile = sizeof(buf2);
-      if (!GetOpenFileNameW(&o))
+      ofw_.nMaxFile = sizeof(buf2);
+      if (!GetOpenFileNameW(&ofw_))
          return 0;
       stb_to_utf8(filenamebuffer, buf2, sizeof(filenamebuffer));
       filename = filenamebuffer;
@@ -2921,7 +3003,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                MoveWindow(win, qs.x,qs.y,qs.w,qs.h, TRUE);
                InvalidateRect(win, NULL, FALSE);
             } else {
-               o(("Enqueueing resize\n"));
+               DBJ_LOG(("Enqueueing resize"));
                pending_resize.size = qs;
                queue_resize(qs.w, qs.h, source_c, FALSE);
             }
@@ -2946,7 +3028,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             } else {
                // resize is done
                HDC hdc;
-               o(("Finished resize\n"));
+               DBJ_LOG(("Finished resize"));
 
                // reclaim ownership of the image from the resizer
                pending_resize.image_c->status = LOAD_available;
@@ -2994,7 +3076,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
       TranslateMessage(&msg);
       DispatchMessage(&msg);
    }
-}
+
+#ifndef __clang__
+   // if clang this will be auto called on exit
+   // otherwise must call manually before main ends
+   dbj_close_log_file();
+#endif
+
+} // WinMain
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3193,7 +3282,7 @@ static Color lerp(Color dest, Color src, uint8 a)
    return (rb & 0xff00ff) + (ga & 0xff00ff00);
 }
 
-#if 1
+#if 0 // DBJ: was 1
 
 
 #define SSE __declspec(align(16))
@@ -3203,6 +3292,8 @@ static Color lerp(Color dest, Color src, uint8 a)
 //   out = (a*t+b)*t^2 + (c*t+d)*1
 
 MMX int16 three[4] = { 3,3,3,3 };
+
+// DBJ: was `round`
 MMX int16 dbj_round[4] = { 128,128,128,128 };
 
 static void cubic_interpolate_span(uint32 *dest,
@@ -3253,7 +3344,7 @@ static void cubic_interpolate_span(uint32 *dest,
 
       add       ecx,step_src
       add       edx,step_src
-#if 1
+#if 1 // DBJ: was 1
       // catmull-rom cubic
       // "scheduled" to try to spread stuff out early
       // also the final shift by two has been optimized up earlier
@@ -3649,8 +3740,8 @@ void image_resize(Image *dest, Image *src)
 #endif
 }
 
-char imv_failure_buffer[1024];
-char *imv_failure_string;
+char imv_failure_buffer[1024] = {0}; // DBJ: `added = {0}`
+char *imv_failure_string = 0 ;
 
 static char  *imv_failure_reason(void)
 {
@@ -4126,3 +4217,7 @@ static uint8 *imv_decode_from_memory(uint8 *mem, int len, int *x, int *y, Bool* 
 
    return res;
 }
+
+
+// DBJ: epilog
+#pragma warning( push )
