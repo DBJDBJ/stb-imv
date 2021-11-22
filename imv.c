@@ -2700,6 +2700,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    int argc;
    LPWSTR       *argv = CommandLineToArgvW(cmdline, &argc);
 
+#ifndef __clang__
+   dbj_construct_log_file();
+#endif
+
    //int argc;
    //char **argv = stb_tokens_quoted(lpCmdLine, " ", &argc);
    char filenamebuffer[4096] = {0};

@@ -55,6 +55,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <crtdbg.h>
+#include <stdio.h> // vsprintf_s
 
 #undef assert
 #define assert _ASSERTE
@@ -64,8 +65,9 @@ void dbj_log_print(const char* file_, const char* line_, char* str, ...);
 
 #ifndef __clang__
 void dbj_close_log_file(void);
-#else 
-#endif // ! __clang__
+void dbj_construct_log_file(void);
+#else  // __clang__
+#endif // __clang__
 
 
 #ifdef DBJ_WIN32_LOGFILE_IMPLEMENTATION
@@ -122,14 +124,22 @@ HANDLE dbj_create_log_file(void)
     return hFile;
 }
 
+#ifdef __clang__
+__attribute__((constructor))
+#endif // __clang__
+void dbj_construct_log_file(void) {
+    dbj_log_file = dbj_create_log_file();
+}
+
 /*
 this actually might be NOT slower than using some global CRITICAL_SECTION
 and entering/deleting it only once ... why not measuring it?
 */
-void  default_protector_function(int lock)
+void  default_protector_function(CRITICAL_SECTION CS_, int lock)
 {
     // Think: this is one per process
-    static CRITICAL_SECTION   CS_;
+    // therefore no
+    // static CRITICAL_SECTION   CS_;
 
     if (lock)
     {
@@ -145,10 +155,7 @@ void  default_protector_function(int lock)
 void  dbj_write_log_file(LPCSTR text_)
 {
     assert(text_);
-    if (! dbj_log_file)
-    dbj_log_file = dbj_create_log_file();
-
-    default_protector_function(1);
+    assert(dbj_log_file);
 
     DWORD dwBytesToWrite = (DWORD)strlen(text_);
     DWORD dwBytesWritten = 0;
@@ -162,22 +169,23 @@ void  dbj_write_log_file(LPCSTR text_)
 
     if (FALSE == bErrorFlag)
     {
-        error("WriteFile failed, aborting ...");
-        exit(0);
+        dbj_terror();
     }
-
-    default_protector_function(0);
 }
 
 // DBJ: just a bit less trivial
 void dbj_log_print(const char* file_, const char* line_, char* str, ...) 
 {
-
     assert(file_ && line_);
+
+    static CRITICAL_SECTION   CS_; // local per this function
+    default_protector_function(CS_,1);
+
     char buffer[1024] = { 0 };
     va_list va = 0;
     va_start(va, str);
-    vsprintf(buffer, str, va);
+    int vsprintf_rezult = vsprintf_s(buffer, 1024, str, va);
+    assert(vsprintf_rezult > 0);
     va_end(va);
 
     dbj_write_log_file("\n");
@@ -190,6 +198,7 @@ void dbj_log_print(const char* file_, const char* line_, char* str, ...)
 #ifdef DBJ_ERROR_USES_MBOX
     MessageBox(NULL, buffer, "imv(stb) (dbj 2021) error", MB_OK);
 #endif
+    default_protector_function(CS_, 0);
 }
 
 #endif // DBJ_WIN32_LOGFILE_IMPLEMENTATION
