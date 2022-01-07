@@ -4,7 +4,7 @@
   For no-console windows desktop apps we use as the last resort log file
   epsecially in release builds where there is no OutputDebugString
 
-  CAVEAT EMPTOR: this is safe and slow approach. if speed is primary do not use 
+  CAVEAT EMPTOR: this is safe and slow approach. If speed is primary concern, do not use 
  
  (c) 2021 by dbj@dbj.org 
  https://dbj.org/license_dbj
