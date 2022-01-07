@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -7,19 +7,17 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include <winres.h>
+#include "afxres.h"
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -27,18 +25,18 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE DISCARDABLE 
+1 TEXTINCLUDE 
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE DISCARDABLE 
+2 TEXTINCLUDE 
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE DISCARDABLE 
+3 TEXTINCLUDE 
 BEGIN
     "\r\n"
     "\0"
@@ -52,37 +50,31 @@ END
 // Dialog
 //
 
-IDD_pref DIALOG DISCARDABLE  0, 0, 161, 226
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_pref DIALOG 0, 0, 161, 226
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "imv(stb) preferences"
 FONT 8, "MS Sans Serif"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,23,199,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,83,199,50,14
-    CONTROL         "High-quality &resizing",DIALOG_upsample,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,23,166,76,10
+    CONTROL         "High-quality &resizing",DIALOG_upsample,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,23,166,76,10
     EDITTEXT        DIALOG_r1,57,50,19,12,ES_RIGHT | ES_AUTOHSCROLL
     EDITTEXT        DIALOG_g1,79,50,19,12,ES_RIGHT | ES_AUTOHSCROLL
     EDITTEXT        DIALOG_b1,101,50,19,12,ES_RIGHT | ES_AUTOHSCROLL
     RTEXT           "Color 1",IDC_STATIC,28,53,25,12
     RTEXT           "Color 2",IDC_STATIC,28,65,25,13
-    GROUPBOX        "Background color for transparent images",IDC_STATIC,5,
-                    40,147,42
+    GROUPBOX        "Background color for transparent images",IDC_STATIC,5,40,147,42
     EDITTEXT        DIALOG_r2,57,63,19,12,ES_RIGHT | ES_AUTOHSCROLL
     EDITTEXT        DIALOG_g2,79,63,19,12,ES_RIGHT | ES_AUTOHSCROLL
     EDITTEXT        DIALOG_b2,101,63,19,12,ES_RIGHT | ES_AUTOHSCROLL
     EDITTEXT        DIALOG_cachesize,10,150,21,13,ES_AUTOHSCROLL
-    LTEXT           "Size of image cache (megabytes)",IDC_STATIC,34,153,107,
-                    8
+    LTEXT           "Size of image cache (megabytes)",IDC_STATIC,34,153,107,8
     LTEXT           "",DIALOG_image,45,7,70,28
     EDITTEXT        DIALOG_labelheight,10,118,21,12,ES_AUTOHSCROLL
     LTEXT           "Label font height",IDC_STATIC,34,120,56,10
-    CONTROL         "Show filename &label",DIALOG_showlabel,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,23,104,120,10
-    CONTROL         "Only use stb_image loaders",DIALOG_stbi_only,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,23,179,111,10
-    CONTROL         "Show &border",DIALOG_showborder,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,23,91,82,10
+    CONTROL         "Show filename &label",DIALOG_showlabel,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,23,104,120,10
+    CONTROL         "Only use stb_image loaders",DIALOG_stbi_only,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,23,179,111,10
+    CONTROL         "Show &border",DIALOG_showborder,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,23,91,82,10
     EDITTEXT        DIALOG_slideshowtime,10,134,21,12,ES_AUTOHSCROLL
     LTEXT           "Slideshow time (seconds)",IDC_STATIC,34,136,96,10
 END
@@ -94,7 +86,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_pref, DIALOG
     BEGIN
@@ -114,17 +106,17 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ICON1               ICON    DISCARDABLE     "imv.ico"
+IDI_ICON1               ICON                    "imv.ico"
 
-#ifndef _MAC
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // Version
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
- PRODUCTVERSION 1,0,0,1
+ FILEVERSION 2,0,0,1
+ PRODUCTVERSION 2,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -139,18 +131,14 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comments", "\0"
-            VALUE "CompanyName", " Sean Barrett / nothings.org\0"
-            VALUE "FileDescription", "imv(stb) image viewer\0"
-            VALUE "FileVersion", "1, 0, 0, 1\0"
-            VALUE "InternalName", "stb_imv\0"
-            VALUE "LegalCopyright", "GPL; Copyright � 2007\0"
-            VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "stb_imv.exe\0"
-            VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "imv(stb)\0"
-            VALUE "ProductVersion", "1, 0, 0, 1\0"
-            VALUE "SpecialBuild", "\0"
+            VALUE "CompanyName", " Sean Barrett / nothings.org"
+            VALUE "FileDescription", "imv(stb) image viewer 2022 refactoring dbj at dbj dot org"
+            VALUE "FileVersion", "2.0.0.1"
+            VALUE "InternalName", "stb_imv"
+            VALUE "LegalCopyright", "GPL; Copyright � 2007"
+            VALUE "OriginalFilename", "stb_imv.exe"
+            VALUE "ProductName", "imv(stb)"
+            VALUE "ProductVersion", "2.0.0.1"
         END
     END
     BLOCK "VarFileInfo"
@@ -159,9 +147,7 @@ BEGIN
     END
 END
 
-#endif    // !_MAC
-
-#endif    // English (U.S.) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

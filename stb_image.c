@@ -1,3 +1,8 @@
+/*
+* DBJ:
+* This is STB IMAGE header and c file in one
+* this is included from the main file imv.c
+*/
 /* stbi-1.17 - public domain JPEG/PNG reader - http://nothings.org/stb_image.c
                       when you control the images you're loading
 

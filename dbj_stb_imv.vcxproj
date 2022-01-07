@@ -117,12 +117,16 @@
     <ClCompile Include="pics.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="afxres.h" />
     <ClInclude Include="dbj_win32_log_file.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stb.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="pref.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="imv.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
